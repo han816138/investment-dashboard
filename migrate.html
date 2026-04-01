@@ -58,10 +58,14 @@ textarea:focus{border-color:var(--accent);}
 <!-- STEP 2 -->
 <div class="step">
   <div class="step-title"><span class="badge">步驟 2</span>匯出資料（預覽 JSON）</div>
-  <button class="btn btn-accent" onclick="exportData()">📤 匯出所有資料</button>
-  <div style="margin-top:12px;" id="exportArea" style="display:none;">
-    <textarea id="exportJson" rows="8" placeholder="點上方按鈕後會顯示 JSON 資料…" readonly></textarea>
-    <p class="tip">可以把上面的內容複製下來備份，或繼續往下直接上傳到 Google Sheets。</p>
+  <button class="btn btn-accent" onclick="exportData()">📤 從 localStorage 匯出</button>
+  <div style="margin-top:12px;">
+    <div style="font-size:11px;color:var(--text2);margin-bottom:6px;">或直接把 JSON 資料貼到這裡：</div>
+    <textarea id="exportJson" rows="8" placeholder='從瀏覽器 Console 複製的 JSON 貼在這裡，格式如：{"income":[...],"growth":[...],"us":[...],"persons":[...]}' oninput="parseManualJson()"></textarea>
+    <div id="parseStatus" style="font-size:11px;margin-top:6px;"></div>
+    <p class="tip">在舊版儀表板的瀏覽器按 F12 → Console，貼上以下指令取得資料：<br>
+    <code style="background:var(--bg3);padding:3px 6px;border-radius:4px;font-size:10px;">JSON.stringify({income:JSON.parse(localStorage.getItem('inv_income')||'[]'),growth:JSON.parse(localStorage.getItem('inv_growth')||'[]'),us:JSON.parse(localStorage.getItem('inv_us')||'[]'),persons:JSON.parse(localStorage.getItem('inv_persons')||'[]')})</code>
+    </p>
   </div>
 </div>
 
@@ -116,8 +120,26 @@ function exportData(){
   exportedData = data;
   const ta = document.getElementById('exportJson');
   ta.value = JSON.stringify(data, null, 2);
-  document.getElementById('exportArea').style.display = 'block';
-  ta.style.display = 'block';
+  updateParseStatus();
+}
+
+function parseManualJson(){
+  const ta = document.getElementById('exportJson');
+  try{
+    const data = JSON.parse(ta.value);
+    if(data.income !== undefined && data.growth !== undefined){
+      exportedData = data;
+      updateParseStatus();
+    }
+  }catch(e){ /* 輸入中，忽略 */ }
+}
+
+function updateParseStatus(){
+  const el = document.getElementById('parseStatus');
+  if(!exportedData){ el.textContent=''; return; }
+  const counts = KEYS.map(k=>`${k}: ${(exportedData[k]||[]).length} 筆`).join('　');
+  el.style.color = 'var(--accent2)';
+  el.textContent = '✓ 已讀取資料 — ' + counts;
 }
 
 async function uploadToSheets(){

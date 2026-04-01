@@ -68,7 +68,8 @@ textarea:focus{border-color:var(--accent);}
 <!-- STEP 3 -->
 <div class="step">
   <div class="step-title"><span class="badge">步驟 3</span>直接上傳到 Google Sheets（透過 Apps Script）</div>
-  <input id="gasUrl" class="gas-input" type="text" placeholder="貼上你的 Apps Script Web App URL：https://script.google.com/macros/s/xxx/exec">
+  <input id="gasUrl" class="gas-input" type="text" placeholder="Apps Script 網址：https://script.google.com/macros/s/xxx/exec">
+  <input id="gasToken" class="gas-input" type="password" placeholder="存取密碼（與 Apps Script 裡的 SECRET 一致）">
   <button class="btn btn-green" onclick="uploadToSheets()">☁️ 一鍵上傳到 Google Sheets</button>
   <div class="result" id="uploadResult"></div>
   <p class="tip">上傳前請確認已完成 Apps Script 部署，且 4 個分頁（income / growth / us / persons）都已建立。</p>
@@ -120,8 +121,10 @@ function exportData(){
 }
 
 async function uploadToSheets(){
-  const url = document.getElementById('gasUrl').value.trim();
-  if(!url){ alert('請先輸入 Apps Script 網址'); return; }
+  const url   = document.getElementById('gasUrl').value.trim();
+  const token = document.getElementById('gasToken').value.trim();
+  if(!url)  { alert('請先輸入 Apps Script 網址'); return; }
+  if(!token){ alert('請先輸入存取密碼'); return; }
   if(!exportedData){ exportData(); }
 
   const resultEl = document.getElementById('uploadResult');
@@ -135,7 +138,7 @@ async function uploadToSheets(){
       const r = await fetch(url, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({key: k, data: exportedData[k]})
+        body: JSON.stringify({key: k, data: exportedData[k], token})
       });
       const j = await r.json();
       if(!j.ok) errors.push(k + '：' + (j.error||'未知錯誤'));
@@ -149,13 +152,15 @@ async function uploadToSheets(){
     resultEl.textContent = '✅ 全部上傳成功！income / growth / us / persons 都已寫入 Google Sheets。';
   } else {
     resultEl.className = 'result err';
-    resultEl.textContent = '❌ 部分失敗：' + errors.join('、') + '\n\n請確認 Apps Script 網址正確，且分頁名稱一致。';
+    resultEl.textContent = '❌ 部分失敗：' + errors.join('、') + '\n\n請確認網址與密碼正確，且分頁名稱一致。';
   }
 }
 
 async function verifyUpload(){
-  const url = document.getElementById('gasUrl').value.trim();
-  if(!url){ alert('請先輸入 Apps Script 網址'); return; }
+  const url   = document.getElementById('gasUrl').value.trim();
+  const token = document.getElementById('gasToken').value.trim();
+  if(!url)  { alert('請先輸入 Apps Script 網址'); return; }
+  if(!token){ alert('請先輸入存取密碼'); return; }
 
   const resultEl = document.getElementById('verifyResult');
   resultEl.style.display = 'block';
@@ -166,7 +171,7 @@ async function verifyUpload(){
   let allOk = true;
   for(const k of KEYS){
     try{
-      const r = await fetch(url + '?key=' + k);
+      const r = await fetch(url + '?key=' + k + '&token=' + encodeURIComponent(token));
       const j = await r.json();
       if(j.ok){
         lines.push('✓ ' + k + '：' + j.data.length + ' 筆');

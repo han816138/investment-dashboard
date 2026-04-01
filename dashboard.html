@@ -217,11 +217,15 @@ footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);displ
 <div id="gasBanner" style="display:none;background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.25);border-radius:12px;padding:18px 20px;margin-bottom:20px;">
   <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;">☁️ 雲端設定 — 請輸入 Google Apps Script 網址</div>
   <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">部署 Apps Script 後，把 Web App URL 貼到這裡，資料就會同步到 Google Sheets。</div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;">
-    <input id="gasUrlInput" type="text" placeholder="https://script.google.com/macros/s/xxxxxxxx/exec"
-      style="flex:1;min-width:260px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
-    <button class="btn btn-accent" onclick="saveGasUrl()">儲存並重新載入</button>
-    <button class="btn btn-ghost" onclick="document.getElementById('gasBanner').style.display='none'">取消</button>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <input id="gasUrlInput" type="text" placeholder="Apps Script 網址：https://script.google.com/macros/s/xxxxxxxx/exec"
+      style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
+    <input id="gasTokenInput" type="password" placeholder="存取密碼（與 Apps Script 裡的 SECRET 一致）"
+      style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-accent" onclick="saveGasSettings()">儲存並重新載入</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('gasBanner').style.display='none'">取消</button>
+    </div>
   </div>
 </div>
 
@@ -466,14 +470,14 @@ const DEF={
 
 // ═══════════════════════════════════
 //  ★ Google Apps Script API 設定
-//  請把下面的網址換成你部署後拿到的 URL
 // ═══════════════════════════════════
-const GAS_URL = localStorage.getItem('gas_url') || '';
+const GAS_URL   = localStorage.getItem('gas_url')   || '';
+const GAS_TOKEN = localStorage.getItem('gas_token') || '';
 
 // ═══════════════════════════════════
 //  STATE (Google Sheets via GAS)
 // ═══════════════════════════════════
-let ST = JSON.parse(JSON.stringify(DEF)); // 先用預設值，載入後會替換
+let ST = JSON.parse(JSON.stringify(DEF));
 
 async function load(){
   if(!GAS_URL){ showGasNotice(); return; }
@@ -481,14 +485,14 @@ async function load(){
     showSyncStatus('載入資料中…', 'loading');
     const keys=['income','growth','us','persons'];
     const results = await Promise.all(keys.map(async k=>{
-      const r = await fetch(GAS_URL+'?key='+k);
+      const r = await fetch(GAS_URL+'?key='+k+'&token='+encodeURIComponent(GAS_TOKEN));
       const j = await r.json();
       return {k, data: j.ok ? j.data : JSON.parse(JSON.stringify(DEF[k]))};
     }));
     results.forEach(({k,data})=>{ ST[k]=data; });
     showSyncStatus('雲端同步完成', 'ok');
   }catch(e){
-    showSyncStatus('載入失敗，使用本機預設', 'error');
+    showSyncStatus('載入失敗', 'error');
     console.error('GAS load error:', e);
   }
 }
@@ -502,7 +506,7 @@ async function save(){
       fetch(GAS_URL, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({key:k, data:ST[k]})
+        body: JSON.stringify({key:k, data:ST[k], token:GAS_TOKEN})
       })
     ));
     showSyncStatus('已儲存至雲端', 'ok');
@@ -524,17 +528,19 @@ function showGasNotice(){
   if(banner) banner.style.display='block';
 }
 
-function saveGasUrl(){
-  const url = document.getElementById('gasUrlInput').value.trim();
-  if(!url){ alert('請輸入 Apps Script 網址'); return; }
+function saveGasSettings(){
+  const url   = document.getElementById('gasUrlInput').value.trim();
+  const token = document.getElementById('gasTokenInput').value.trim();
+  if(!url)  { alert('請輸入 Apps Script 網址'); return; }
+  if(!token){ alert('請輸入存取密碼'); return; }
   localStorage.setItem('gas_url', url);
+  localStorage.setItem('gas_token', token);
   location.reload();
 }
 
-// 讓全域可以更新 GAS_URL（reload 後生效）
 function openGasSettings(){
-  const current = localStorage.getItem('gas_url')||'';
-  document.getElementById('gasUrlInput').value = current;
+  document.getElementById('gasUrlInput').value   = localStorage.getItem('gas_url')   || '';
+  document.getElementById('gasTokenInput').value = localStorage.getItem('gas_token') || '';
   document.getElementById('gasBanner').style.display='block';
 }
 

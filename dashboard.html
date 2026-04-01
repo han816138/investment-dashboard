@@ -477,22 +477,34 @@ const GAS_TOKEN = localStorage.getItem('gas_token') || '';
 // ═══════════════════════════════════
 //  STATE (Google Sheets via GAS)
 // ═══════════════════════════════════
-let ST = JSON.parse(JSON.stringify(DEF));
+let ST = {income:[],growth:[],us:[],persons:[]};  // 預設空白，不顯示假資料
 
 async function load(){
-  if(!GAS_URL){ showGasNotice(); return; }
+  if(!GAS_URL || !GAS_TOKEN){
+    ST = {income:[],growth:[],us:[],persons:[]};
+    localStorage.removeItem('gas_url');
+    localStorage.removeItem('gas_token');
+    showGasNotice();
+    showSyncStatus('請先完成雲端設定', 'error');
+    return;
+  }
   try{
     showSyncStatus('載入資料中…', 'loading');
     const keys=['income','growth','us','persons'];
     const results = await Promise.all(keys.map(async k=>{
       const r = await fetch(GAS_URL+'?key='+k+'&token='+encodeURIComponent(GAS_TOKEN));
       const j = await r.json();
-      return {k, data: j.ok ? j.data : JSON.parse(JSON.stringify(DEF[k]))};
+      if(!j.ok) throw new Error(j.error||'讀取失敗');
+      return {k, data: j.data};
     }));
     results.forEach(({k,data})=>{ ST[k]=data; });
     showSyncStatus('雲端同步完成', 'ok');
   }catch(e){
-    showSyncStatus('載入失敗', 'error');
+    ST = {income:[],growth:[],us:[],persons:[]};
+    localStorage.removeItem('gas_url');
+    localStorage.removeItem('gas_token');
+    showSyncStatus('載入失敗，請重新設定', 'error');
+    showGasNotice();
     console.error('GAS load error:', e);
   }
 }

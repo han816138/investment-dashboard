@@ -121,10 +121,10 @@ function exportData(){
 }
 
 async function uploadToSheets(){
-  const url   = document.getElementById('gasUrl').value.trim();
-  const token = document.getElementById('gasToken').value.trim();
-  if(!url)  { alert('請先輸入 Apps Script 網址'); return; }
-  if(!token){ alert('請先輸入存取密碼'); return; }
+  const url_base = document.getElementById('gasUrl').value.trim();
+  const token    = document.getElementById('gasToken').value.trim();
+  if(!url_base){ alert('請先輸入 Apps Script 網址'); return; }
+  if(!token)   { alert('請先輸入存取密碼'); return; }
   if(!exportedData){ exportData(); }
 
   const resultEl = document.getElementById('uploadResult');
@@ -135,11 +135,12 @@ async function uploadToSheets(){
   const errors = [];
   for(const k of KEYS){
     try{
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({key: k, data: exportedData[k], token})
-      });
+      const url = url_base
+        + '?action=save'
+        + '&key=' + encodeURIComponent(k)
+        + '&token=' + encodeURIComponent(token)
+        + '&data=' + encodeURIComponent(JSON.stringify(exportedData[k]));
+      const r = await fetch(url);
       const j = await r.json();
       if(!j.ok) errors.push(k + '：' + (j.error||'未知錯誤'));
     }catch(e){

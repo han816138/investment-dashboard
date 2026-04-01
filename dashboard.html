@@ -502,13 +502,14 @@ async function save(){
   try{
     showSyncStatus('儲存中…', 'loading');
     const keys=['income','growth','us','persons'];
-    await Promise.all(keys.map(k=>
-      fetch(GAS_URL, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({key:k, data:ST[k], token:GAS_TOKEN})
-      })
-    ));
+    await Promise.all(keys.map(k=>{
+      const url = GAS_URL
+        + '?action=save'
+        + '&key=' + encodeURIComponent(k)
+        + '&token=' + encodeURIComponent(GAS_TOKEN)
+        + '&data=' + encodeURIComponent(JSON.stringify(ST[k]));
+      return fetch(url);
+    }));
     showSyncStatus('已儲存至雲端', 'ok');
   }catch(e){
     showSyncStatus('儲存失敗', 'error');

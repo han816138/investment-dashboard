@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月進投資儀表板</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080c10; --bg2:#0d1318; --bg3:#111820; --bg4:#161e28;
+  --border:#1e2d3d; --border2:#243447; --border3:#2d4057;
+  --accent:#00d4ff; --accent2:#00ff88; --warn:#ffb800; --red:#ff4560;
+  --text:#cdd9e5; --text2:#637080; --text3:#8899aa;
+  --glow:rgba(0,212,255,0.12); --glow2:rgba(0,255,136,0.10);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans TC',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:1440px;margin:0 auto;padding:24px 16px;}
+
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-mark{width:42px;height:42px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 24px var(--glow);}
+.logo h1{font-size:22px;font-weight:900;letter-spacing:-0.5px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.logo p{font-size:11px;color:var(--text2);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+.header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.update-info{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px;}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2);animation:pulseAnim 2s infinite;}
+@keyframes pulseAnim{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
+.pulse.loading{background:var(--warn);box-shadow:0 0 8px var(--warn);}
+.pulse.error{background:var(--red);box-shadow:0 0 8px var(--red);animation:none;}
+
+/* BUTTONS */
+.btn{font-family:'Noto Sans TC',sans-serif;cursor:pointer;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:500;transition:all 0.2s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text3);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);background:var(--glow);}
+.btn-accent{background:linear-gradient(135deg,var(--accent),#0099cc);color:#050a0e;font-weight:700;}
+.btn-accent:hover{opacity:0.85;transform:translateY(-1px);}
+.btn-green{background:linear-gradient(135deg,var(--accent2),#00cc6a);color:#050a0e;font-weight:700;}
+.btn-green:hover{opacity:0.85;transform:translateY(-1px);}
+.btn-red{background:rgba(255,69,96,0.15);border:1px solid rgba(255,69,96,0.3);color:var(--red);}
+.btn-red:hover{background:rgba(255,69,96,0.28);}
+.btn-warn{background:rgba(255,184,0,0.15);border:1px solid rgba(255,184,0,0.3);color:var(--warn);}
+.btn-warn:hover{background:rgba(255,184,0,0.28);}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:6px;}
+.btn.spinning svg{animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* SUMMARY CARDS */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:28px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden;transition:border-color 0.2s,box-shadow 0.2s;}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));opacity:0;transition:opacity 0.2s;}
+.card:hover::before{opacity:1;}
+.card:hover{border-color:var(--border2);box-shadow:0 4px 32px rgba(0,0,0,0.4);}
+.card-label{font-size:10px;color:var(--text2);font-weight:600;letter-spacing:0.6px;text-transform:uppercase;margin-bottom:8px;}
+.card-value{font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;line-height:1;margin-bottom:4px;}
+.card-sub{font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;}
+.card-value.green{color:var(--accent2);text-shadow:0 0 20px rgba(0,255,136,0.3);}
+.card-value.blue{color:var(--accent);text-shadow:0 0 20px rgba(0,212,255,0.3);}
+
+/* TABS */
+.tab-nav{display:flex;gap:4px;margin-bottom:20px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content;flex-wrap:wrap;}
+.tab-btn{font-family:'Noto Sans TC',sans-serif;background:transparent;border:none;color:var(--text2);padding:8px 18px;border-radius:9px;font-size:13px;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.tab-btn.active{background:var(--bg3);color:var(--accent);box-shadow:0 0 12px var(--glow);border:1px solid var(--border2);}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* SECTION */
+.section{margin-bottom:24px;}
+.section-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.section-header h2{font-size:14px;font-weight:600;}
+.section-header .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border2),transparent);min-width:20px;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;padding:3px 8px;border-radius:4px;letter-spacing:0.3px;}
+.tag-etf{background:rgba(0,212,255,0.1);color:var(--accent);border:1px solid rgba(0,212,255,0.2);}
+.tag-us{background:rgba(0,255,136,0.1);color:var(--accent2);border:1px solid rgba(0,255,136,0.2);}
+.tag-div{background:rgba(255,184,0,0.1);color:var(--warn);border:1px solid rgba(255,184,0,0.2);}
+.tag-stk{background:rgba(255,69,96,0.12);color:#ff7b92;border:1px solid rgba(255,69,96,0.2);}
+
+/* TABLE */
+.table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:680px;}
+thead th{padding:10px 14px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;background:var(--bg3);border-bottom:1px solid var(--border);text-align:right;white-space:nowrap;}
+thead th:first-child{text-align:left;}
+thead th.act-col{text-align:center;min-width:90px;}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,0.025);}
+tbody td{padding:11px 14px;font-size:12px;text-align:right;white-space:nowrap;}
+tbody td:first-child{text-align:left;}
+tbody td.act-col{text-align:center;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.pos{color:var(--accent2);}
+.neg{color:var(--red);}
+.neu{color:var(--text2);}
+.warn-c{color:var(--warn);}
+.name-cell{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sym{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);}
+.skeleton{display:inline-block;width:55px;height:13px;background:linear-gradient(90deg,var(--border) 25%,var(--border2) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:3px;vertical-align:middle;}
+@keyframes shimmer{to{background-position:-200% 0;}}
+.act-btns{display:flex;gap:5px;justify-content:center;}
+
+/* PERSON CARDS */
+.person-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:20px;}
+.person-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.person-card-header{padding:14px 18px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.person-card-header h3{font-size:14px;font-weight:600;}
+.phdr-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.pkpi{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);margin-right:8px;}
+.person-table{overflow-x:auto;}
+.person-table table{min-width:520px;}
+.person-table thead th{padding:8px 12px;font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.4px;background:transparent;border-bottom:1px solid var(--border);text-align:right;}
+.person-table thead th:first-child{text-align:left;}
+.person-table thead th.act-col{text-align:center;min-width:80px;}
+.person-table tbody td{padding:9px 12px;font-size:12px;text-align:right;border-bottom:1px solid rgba(30,45,61,0.5);}
+.person-table tbody td:first-child{text-align:left;}
+.person-table tbody td.act-col{text-align:center;}
+.person-table tbody tr:last-child td{border-bottom:none;}
+.person-table tbody tr:hover td{background:rgba(255,255,255,0.02);}
+.interest-box{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;background:rgba(0,0,0,0.2);align-items:center;}
+.interest-item{font-size:11px;color:var(--text2);}
+.interest-item strong{font-family:'JetBrains Mono',monospace;color:var(--text);margin-left:4px;}
+
+/* 已領取 inline edit */
+.collected-wrap{display:inline-flex;align-items:center;gap:4px;margin-left:4px;}
+.collected-val{font-family:'JetBrains Mono',monospace;color:var(--text);cursor:pointer;border-bottom:1px dashed var(--border2);transition:border-color 0.15s,color 0.15s;padding-bottom:1px;}
+.collected-val:hover{color:var(--warn);border-color:var(--warn);}
+.collected-edit-icon{font-size:10px;color:var(--text2);cursor:pointer;opacity:0;transition:opacity 0.15s;}
+.interest-item:hover .collected-edit-icon{opacity:1;}
+.collected-input{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg3);border:1px solid var(--accent);border-radius:5px;color:var(--text);padding:2px 7px;width:100px;outline:none;}
+
+/* PERSON SECTION TOP */
+.person-section-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.person-section-top h2{font-size:15px;font-weight:700;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.8);}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-header h3{font-size:16px;font-weight:700;}
+.modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:22px;line-height:1;padding:4px 8px;transition:color 0.15s;border-radius:6px;}
+.modal-close:hover{color:var(--text);background:rgba(255,255,255,0.05);}
+.modal-body{padding:22px 24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-single{grid-template-columns:1fr;}
+.fg{display:flex;flex-direction:column;gap:6px;}
+.fg.full{grid-column:1/-1;}
+.fg label{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:0.4px;text-transform:uppercase;}
+.fg input,.fg select{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:9px 12px;font-size:13px;font-family:'Noto Sans TC',sans-serif;transition:border-color 0.2s;width:100%;}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--accent);background:rgba(0,212,255,0.04);}
+.fg select option{background:var(--bg3);}
+.form-hint{font-size:10px;color:var(--text2);margin-top:2px;}
+.checkbox-row{display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 0;}
+.checkbox-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);}
+
+/* CONFIRM */
+.confirm-msg{font-size:14px;line-height:1.8;color:var(--text2);}
+.confirm-msg strong{color:var(--red);}
+
+/* FADE */
+.fade-in{animation:fadeIn 0.35s ease both;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .summary-grid{grid-template-columns:repeat(2,1fr);}
+  .card-value{font-size:18px;}
+  .form-grid{grid-template-columns:1fr;}
+  .person-grid{grid-template-columns:1fr;}
+}
+@media(max-width:480px){
+  header{flex-direction:column;align-items:flex-start;}
+  .tab-nav{width:100%;}
+  .tab-btn{flex:1;text-align:center;padding:7px 6px;font-size:11px;}
+}
+
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;}
+
+/* ERROR BANNER */
+.error-banner{background:rgba(255,184,0,0.06);border:1px solid rgba(255,184,0,0.25);border-radius:12px;overflow:hidden;}
+.error-banner-top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;transition:background 0.15s;gap:12px;flex-wrap:wrap;}
+.error-banner-top:hover{background:rgba(255,184,0,0.06);}
+.error-title{font-size:13px;font-weight:600;color:var(--warn);margin-bottom:2px;}
+.error-subtitle{font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;}
+.error-cause-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;border-radius:20px;background:rgba(255,184,0,0.15);color:var(--warn);border:1px solid rgba(255,184,0,0.3);white-space:nowrap;}
+.error-toggle{font-size:11px;color:var(--text2);white-space:nowrap;transition:color 0.15s;font-family:'JetBrains Mono',monospace;}
+.error-banner-top:hover .error-toggle{color:var(--warn);}
+.error-detail{border-top:1px solid rgba(255,184,0,0.15);padding:16px 18px;background:rgba(0,0,0,0.2);}
+.error-detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:14px;}
+.error-sym-row{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;}
+.error-sym-row.ok{border-color:rgba(0,255,136,0.2);background:rgba(0,255,136,0.04);}
+.error-sym-row.fail{border-color:rgba(255,69,96,0.2);background:rgba(255,69,96,0.04);}
+.error-sym-row.warn{border-color:rgba(255,184,0,0.2);background:rgba(255,184,0,0.04);}
+.esym{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;min-width:80px;}
+.estatus{font-size:11px;color:var(--text2);flex:1;}
+.estatus.ok{color:var(--accent2);}
+.estatus.fail{color:var(--red);}
+.estatus.warn{color:var(--warn);}
+.edot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.edot.ok{background:var(--accent2);}
+.edot.fail{background:var(--red);}
+.edot.warn{background:var(--warn);}
+.error-tips{padding:12px 14px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.12);border-radius:8px;}
+.error-tips-title{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:8px;letter-spacing:0.3px;}
+.error-tip-item{font-size:11px;color:var(--text2);line-height:1.8;display:flex;gap:6px;}
+.error-tip-item::before{content:'›';color:var(--accent);flex-shrink:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<!-- ★ GAS 設定 Banner -->
+<div id="gasBanner" style="display:none;background:rgba(0,212,255,0.07);border:1px solid rgba(0,212,255,0.25);border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+  <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px;">☁️ 雲端設定 — 請輸入 Google Apps Script 網址</div>
+  <div style="font-size:11px;color:var(--text2);margin-bottom:12px;">部署 Apps Script 後，把 Web App URL 貼到這裡，資料就會同步到 Google Sheets。</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <input id="gasUrlInput" type="text" placeholder="https://script.google.com/macros/s/xxxxxxxx/exec"
+      style="flex:1;min-width:260px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;outline:none;">
+    <button class="btn btn-accent" onclick="saveGasUrl()">儲存並重新載入</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('gasBanner').style.display='none'">取消</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">📊</div>
+    <div>
+      <h1>月進投資儀表板</h1>
+      <p id="lastUpdate">載入中...</p>
+    </div>
+  </div>
+  <div class="header-right">
+      <span id="syncStatus" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);">☁️ 連線中…</span>
+      <button class="btn btn-ghost btn-sm" onclick="openGasSettings()">⚙ 雲端設定</button>
+    <div class="update-info">
+      <div class="pulse" id="pulseIndicator"></div>
+      <span id="statusText">更新中...</span>
+    </div>
+    <button class="btn btn-ghost" id="refreshBtn" onclick="fetchAll()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>
+      </svg>
+      手動更新
+    </button>
+    <button class="btn btn-ghost" style="font-size:12px;color:var(--text2)" onclick="confirmResetData()" title="同步更新代號與即時每股股利（不影響其他資料）">↺ 更新股利</button>
+  </div>
+</header>
+
+<!-- ERROR BANNER -->
+<div id="errorBanner" style="display:none;margin-bottom:20px;">
+  <div class="error-banner">
+    <div class="error-banner-top" onclick="toggleErrorDetail()">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:18px;">⚠️</span>
+        <div>
+          <div class="error-title" id="errorBannerTitle">部分報價無法取得</div>
+          <div class="error-subtitle" id="errorBannerSub"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+        <span class="error-cause-badge" id="errorCauseBadge"></span>
+        <span class="error-toggle" id="errorToggle">▼ 查看詳情</span>
+      </div>
+    </div>
+    <div class="error-detail" id="errorDetail" style="display:none;">
+      <div class="error-detail-grid" id="errorDetailGrid"></div>
+      <div class="error-tips" id="errorTips"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY CARDS -->
+<div class="summary-grid">
+  <div class="card fade-in" style="animation-delay:.04s">
+    <div class="card-label">💰 每月配息</div>
+    <div class="card-value blue mono" id="s-monthly">—</div>
+    <div class="card-sub">收益型 ETF</div>
+  </div>
+  <div class="card fade-in" style="animation-delay:.08s">
+    <div class="card-label">📈 總殖利率</div>
+    <div class="card-value green mono" id="s-yield">—</div>
+    <div class="card-sub">配息 / 投入成本</div>
+  </div>
+  <div class="card fade-in" style="animation-delay:.12s">
+    <div class="card-label">🇹🇼 台股成長市值</div>
+    <div class="card-value blue mono" id="s-mktval-tw">—</div>
+    <div class="card-sub">投報率：<span id="s-roi-tw" style="font-family:'JetBrains Mono',monospace">—</span></div>
+  </div>
+  <div class="card fade-in" style="animation-delay:.16s">
+    <div class="card-label">🇺🇸 美股成長市值</div>
+    <div class="card-value blue mono" id="s-mktval-us">—</div>
+    <div class="card-sub">投報率：<span id="s-roi-us" style="font-family:'JetBrains Mono',monospace">—</span>　×30 換算</div>
+  </div>
+  <div class="card fade-in" style="animation-delay:.20s">
+    <div class="card-label">💵 收益型投入</div>
+    <div class="card-value mono" id="s-cost">—</div>
+    <div class="card-sub">含固定存款</div>
+  </div>
+  <div class="card fade-in" style="animation-delay:.24s">
+    <div class="card-label">🕐 最後更新</div>
+    <div class="card-value mono" style="font-size:15px" id="s-time">—</div>
+    <div class="card-sub">即時報價</div>
+  </div>
+</div>
+
+<!-- TAB NAV -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('income',this)">📥 收益型 ETF</button>
+  <button class="tab-btn" onclick="switchTab('growth',this)">📈 成長型 ETF</button>
+  <button class="tab-btn" onclick="switchTab('us',this)">🇺🇸 美股</button>
+  <button class="tab-btn" onclick="switchTab('person',this)">👥 個人帳戶</button>
+</div>
+
+<!-- TAB: 收益型 -->
+<div class="tab-pane active" id="tab-income">
+  <div class="section">
+    <div class="section-header">
+      <span class="tag tag-div">配息型</span>
+      <h2>收益型 ETF — 固定配息</h2>
+      <div class="line"></div>
+      <button class="btn btn-green btn-sm" onclick="openModal('income')">＋ 新增</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>名稱</th><th>代號</th><th>頻率</th><th>每股股利</th><th>殖利率</th>
+          <th>股數</th><th>成本價</th><th>市價</th><th>漲跌</th><th>每月配息</th><th>投入成本</th>
+          <th class="act-col">操作</th>
+        </tr></thead>
+        <tbody id="incomeBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: 成長型 -->
+<div class="tab-pane" id="tab-growth">
+  <div class="section">
+    <div class="section-header">
+      <span class="tag tag-etf">成長型</span>
+      <h2>成長型 ETF — 資本利得</h2>
+      <div class="line"></div>
+      <button class="btn btn-green btn-sm" onclick="openModal('growth')">＋ 新增</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>名稱</th><th>代號</th><th>股數</th><th>成本價</th>
+          <th>市價</th><th>漲跌</th><th>漲跌%</th><th>市值</th><th>損益</th><th>投報率</th><th>投入成本</th>
+          <th class="act-col">操作</th>
+        </tr></thead>
+        <tbody id="growthBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: 美股 -->
+<div class="tab-pane" id="tab-us">
+  <div class="section">
+    <div class="section-header">
+      <span class="tag tag-us">US</span>
+      <h2>美股 ETF — USD（×30 換算台幣）</h2>
+      <div class="line"></div>
+      <button class="btn btn-green btn-sm" onclick="openModal('us')">＋ 新增</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>名稱</th><th>代號</th><th>股數</th><th>成本價 USD</th>
+          <th>市價 USD</th><th>漲跌</th><th>漲跌%</th><th>市值 TWD</th><th>損益 TWD</th><th>投報率</th>
+          <th class="act-col">操作</th>
+        </tr></thead>
+        <tbody id="usBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: 個人帳戶 -->
+<div class="tab-pane" id="tab-person">
+  <div class="section">
+    <div class="person-section-top">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="tag tag-stk">個人</span>
+        <h2>個人帳戶配息追蹤</h2>
+      </div>
+      <button class="btn btn-green btn-sm" onclick="openAddPersonModal()">＋ 新增帳戶</button>
+    </div>
+    <div class="person-grid" id="personGrid"></div>
+  </div>
+</div>
+
+<footer>
+  <span>月進投資儀表板 · 股價由 Yahoo Finance 提供 · 資料存於 Google Sheets 雲端</span>
+  <span>⚠️ 僅供參考，不構成投資建議</span>
+</footer>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">—</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+//  UID & DEFAULT DATA
+// ═══════════════════════════════════
+function uid(){return'_'+Math.random().toString(36).slice(2,8)+Date.now().toString(36);}
+
+const DEF={
+  income:[
+    {id:uid(),name:'定存250',symbol:null,freq:'月',dividend:39468,shares:1,cost:2500000,isCash:true},
+    {id:uid(),name:'群益937b',symbol:'00937B.TWO',freq:'月',dividend:0.072,shares:140000,cost:2048341},
+    {id:uid(),name:'群益953b',symbol:'00953B.TW',freq:'月',dividend:0.061,shares:125000,cost:1194541},
+    {id:uid(),name:'國泰878',symbol:'00878.TW',freq:'季',dividend:0.4,shares:76000,cost:1642876},
+    {id:uid(),name:'元大713',symbol:'00713.TW',freq:'季',dividend:0.78,shares:40000,cost:1994040},
+    {id:uid(),name:'群益919',symbol:'00919.TW',freq:'季',dividend:0.78,shares:65000,cost:1461594},
+    {id:uid(),name:'美債687b',symbol:'00687B.TWO',freq:'季',dividend:0.28,shares:2000,cost:58912},
+  ],
+  growth:[
+    {id:uid(),name:'凱基009816',symbol:'009816.TW',shares:10000,cost:100601},
+    {id:uid(),name:'日本龍頭00949',symbol:'00949.TW',shares:8000,cost:142439},
+    {id:uid(),name:'日本商社00955',symbol:'00955.TWO',shares:11000,cost:136400},
+    {id:uid(),name:'日本00645',symbol:'00645.TW',shares:1000,cost:31560},
+    {id:uid(),name:'費半00830',symbol:'00830.TW',shares:1161,cost:42523},
+    {id:uid(),name:'富邦金',symbol:'2881.TW',shares:2260,cost:120243},
+    {id:uid(),name:'永豐金',symbol:'2890.TW',shares:2119,cost:34525},
+    {id:uid(),name:'玉山金',symbol:'2884.TW',shares:1010,cost:14175},
+  ],
+  us:[
+    {id:uid(),name:'VTI',symbol:'VTI',shares:1.46262,costUSD:341.87},
+    {id:uid(),name:'VT',symbol:'VT',shares:26.35849,costUSD:131.33},
+    {id:uid(),name:'VOO',symbol:'VOO',shares:0.23614,costUSD:635.26},
+  ],
+  persons:[
+    {id:uid(),name:'林宥辰',collected:1000,holdings:[
+      {id:uid(),name:'國泰878',symbol:'00878.TW',freq:'季',dividend:0.4,shares:515,cost:10609,investDate:'2024-03-01'},
+      {id:uid(),name:'國泰878',symbol:'00878.TW',freq:'季',dividend:0.4,shares:500,cost:10850,investDate:'2024-03-01'},
+      {id:uid(),name:'群益919',symbol:'00919.TW',freq:'季',dividend:0.78,shares:58,cost:1380,investDate:'2024-07-01'},
+      {id:uid(),name:'群益919',symbol:'00919.TW',freq:'季',dividend:0.78,shares:976,cost:22302,investDate:'2025-02-04'},
+    ]},
+    {id:uid(),name:'林昱學',collected:1000,holdings:[
+      {id:uid(),name:'富邦日本',symbol:'00645.TW',freq:'年',dividend:0,shares:73,cost:2304,investDate:'2024-03-01'},
+      {id:uid(),name:'國泰878',symbol:'00878.TW',freq:'季',dividend:0.4,shares:500,cost:10850,investDate:'2024-03-01'},
+      {id:uid(),name:'群益919',symbol:'00919.TW',freq:'季',dividend:0.78,shares:117,cost:2785,investDate:'2024-07-01'},
+      {id:uid(),name:'國泰878',symbol:'00878.TW',freq:'季',dividend:0.4,shares:18,cost:400,investDate:'2024-12-01'},
+      {id:uid(),name:'日本龍頭',symbol:'00949.TW',freq:'季',dividend:0,shares:665,cost:10009,investDate:'2024-07-01'},
+      {id:uid(),name:'群益919',symbol:'00919.TW',freq:'季',dividend:0.78,shares:438,cost:10008,investDate:'2025-02-04'},
+    ]},
+  ]
+};
+
+// ═══════════════════════════════════
+//  ★ Google Apps Script API 設定
+//  請把下面的網址換成你部署後拿到的 URL
+// ═══════════════════════════════════
+const GAS_URL = localStorage.getItem('gas_url') || '';
+
+// ═══════════════════════════════════
+//  STATE (Google Sheets via GAS)
+// ═══════════════════════════════════
+let ST = JSON.parse(JSON.stringify(DEF)); // 先用預設值，載入後會替換
+
+async function load(){
+  if(!GAS_URL){ showGasNotice(); return; }
+  try{
+    showSyncStatus('載入資料中…', 'loading');
+    const keys=['income','growth','us','persons'];
+    const results = await Promise.all(keys.map(async k=>{
+      const r = await fetch(GAS_URL+'?key='+k);
+      const j = await r.json();
+      return {k, data: j.ok ? j.data : JSON.parse(JSON.stringify(DEF[k]))};
+    }));
+    results.forEach(({k,data})=>{ ST[k]=data; });
+    showSyncStatus('雲端同步完成', 'ok');
+  }catch(e){
+    showSyncStatus('載入失敗，使用本機預設', 'error');
+    console.error('GAS load error:', e);
+  }
+}
+
+async function save(){
+  if(!GAS_URL){ showGasNotice(); return; }
+  try{
+    showSyncStatus('儲存中…', 'loading');
+    const keys=['income','growth','us','persons'];
+    await Promise.all(keys.map(k=>
+      fetch(GAS_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({key:k, data:ST[k]})
+      })
+    ));
+    showSyncStatus('已儲存至雲端', 'ok');
+  }catch(e){
+    showSyncStatus('儲存失敗', 'error');
+    console.error('GAS save error:', e);
+  }
+}
+
+function showSyncStatus(msg, type){
+  let el = document.getElementById('syncStatus');
+  if(!el) return;
+  el.textContent = '☁️ '+msg;
+  el.style.color = type==='ok'?'var(--accent2)':type==='error'?'var(--red)':'var(--warn)';
+}
+
+function showGasNotice(){
+  const banner = document.getElementById('gasBanner');
+  if(banner) banner.style.display='block';
+}
+
+function saveGasUrl(){
+  const url = document.getElementById('gasUrlInput').value.trim();
+  if(!url){ alert('請輸入 Apps Script 網址'); return; }
+  localStorage.setItem('gas_url', url);
+  location.reload();
+}
+
+// 讓全域可以更新 GAS_URL（reload 後生效）
+function openGasSettings(){
+  const current = localStorage.getItem('gas_url')||'';
+  document.getElementById('gasUrlInput').value = current;
+  document.getElementById('gasBanner').style.display='block';
+}
+
+// ═══════════════════════════════════
+//  PRICE & DIVIDEND CACHE
+// ═══════════════════════════════════
+const PC={};  // sym -> {price, prev}
+const DC={};  // sym -> latestDividend (number)
+const FX=30;
+
+function allSyms(){
+  const s=new Set();
+  ST.income.forEach(a=>{if(a.symbol)s.add(a.symbol);});
+  ST.growth.forEach(a=>{if(a.symbol)s.add(a.symbol);});
+  ST.us.forEach(a=>{if(a.symbol)s.add(a.symbol);});
+  ST.persons.forEach(p=>p.holdings.forEach(h=>{if(h.symbol)s.add(h.symbol);}));
+  return[...s];
+}
+// 只有收益型（含個人帳戶持股）需要抓股利
+function incomeSyms(){
+  const s=new Set();
+  ST.income.forEach(a=>{if(a.symbol&&!a.isCash)s.add(a.symbol);});
+  ST.persons.forEach(p=>p.holdings.forEach(h=>{if(h.symbol)s.add(h.symbol);}));
+  return[...s];
+}
+
+// ── 代理清單（依序嘗試，第一個成功即返回）──
+const PROXIES = [
+  {
+    name: 'corsproxy.io',
+    build: url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+    parse: async r => {
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.json(); // 直接回傳 Yahoo JSON
+    }
+  },
+  {
+    name: 'allorigins.win',
+    build: url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    parse: async r => {
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const o=await r.json();
+      if(!o.contents) throw new Error('no contents');
+      return JSON.parse(o.contents);
+    }
+  },
+  {
+    name: 'cors-anywhere (herokuapp)',
+    build: url => `https://cors-anywhere.herokuapp.com/${url}`,
+    parse: async r => {
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.json();
+    }
+  },
+];
+
+// 記錄哪個代理最後成功，優先用它
+let lastGoodProxy = 0;
+
+async function tryProxy(proxy, yahooUrl, timeoutMs){
+  const ctrl = new AbortController();
+  const tid = setTimeout(()=>ctrl.abort(), timeoutMs);
+  try{
+    const r = await fetch(proxy.build(yahooUrl), {signal:ctrl.signal});
+    const d = await proxy.parse(r);
+    clearTimeout(tid);
+    return d;
+  } finally { clearTimeout(tid); }
+}
+
+// Returns {price, prev, dividend, proxyName} on success, or {error, reason, attempts} on failure
+async function fetchPrice(sym, needDiv=false){
+  const range = needDiv ? '1y' : '1d';
+  const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=${range}&events=div`;
+  const attempts = [];
+
+  // 從上次成功的代理開始輪詢
+  const order = [...Array(PROXIES.length).keys()].map(i=>(i+lastGoodProxy)%PROXIES.length);
+
+  for(const pi of order){
+    const proxy = PROXIES[pi];
+    try{
+      const d = await tryProxy(proxy, yahooUrl, 7000);
+      // 驗證回傳結構
+      if(d.chart?.error){
+        attempts.push({proxy:proxy.name, result:'代號錯誤：'+d.chart.error.description});
+        continue; // 代號問題，不換代理，直接報錯
+      }
+      if(!d.chart?.result?.[0]){
+        attempts.push({proxy:proxy.name, result:'無資料結構'});
+        continue;
+      }
+      const m = d.chart.result[0].meta;
+      if(!m?.regularMarketPrice){
+        attempts.push({proxy:proxy.name, result:'缺少市價欄位'});
+        continue;
+      }
+      lastGoodProxy = pi; // 記住這個代理成功
+      // 從 events.dividends 取最近一期股利
+      let latestDiv = null;
+      const evts = d.chart.result[0].events?.dividends;
+      if(evts){
+        const divArr = Object.values(evts);
+        if(divArr.length>0){
+          divArr.sort((a,b)=>b.date-a.date);
+          latestDiv = divArr[0].amount;
+        }
+      }
+      return {
+        price: m.regularMarketPrice,
+        prev:  m.chartPreviousClose || m.previousClose,
+        dividend: latestDiv,
+        proxyName: proxy.name
+      };
+    } catch(e){
+      let reason = e.name==='AbortError'||e.message?.includes('abort')
+        ? '逾時 (>7s)'
+        : e.message?.includes('Failed to fetch')||e.message?.includes('NetworkError')
+          ? '網路連線失敗'
+          : e.message||'未知錯誤';
+      attempts.push({proxy:proxy.name, result:reason});
+    }
+  }
+
+  // 所有代理都失敗，整理原因
+  const allTimeout = attempts.every(a=>a.result.includes('逾時'));
+  const allNetwork = attempts.every(a=>a.result.includes('網路'));
+  const hasSymErr  = attempts.some(a=>a.result.includes('代號'));
+
+  let reason;
+  if(hasSymErr) reason = 'Yahoo Finance 找不到代號「'+sym+'」，請確認格式（台股須加 .TW）';
+  else if(allTimeout) reason = '所有代理均逾時，網路可能受限或代理服務不可用';
+  else if(allNetwork) reason = '網路連線失敗，請確認網路狀態';
+  else reason = '三個代理均失敗：' + attempts.map(a=>`${a.proxy}→${a.result}`).join('；');
+
+  return {error:true, reason, attempts};
+}
+
+async function fetchAll(){
+  setStatus('loading');
+  const btn=document.getElementById('refreshBtn');btn.classList.add('spinning');
+  const syms=allSyms();
+  const divSymSet=new Set(incomeSyms());
+  const results=await Promise.allSettled(syms.map(s=>fetchPrice(s,divSymSet.has(s)).then(r=>({s,r}))));
+
+  let ok=0;
+  const symResults={}; // sym -> {ok, reason/proxyName}
+  results.forEach(res=>{
+    if(res.status==='fulfilled'){
+      const{s,r}=res.value;
+      if(r&&!r.error){
+        PC[s]=r;
+        if(r.dividend!=null) DC[s]=r.dividend;
+        ok++;
+        symResults[s]={ok:true,proxyName:r.proxyName};
+      }
+      else{symResults[s]={ok:false,reason:r?.reason||'未知原因',attempts:r?.attempts};}
+    }
+  });
+
+  renderAll();btn.classList.remove('spinning');
+  const ts=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('lastUpdate').textContent=`最後更新：${ts}`;
+  document.getElementById('s-time').textContent=ts;
+
+  if(ok===syms.length){
+    setStatus('ok');
+    document.getElementById('errorBanner').style.display='none';
+  } else {
+    setStatus(ok===0?'error':'partial',ok,syms.length);
+    showErrorBanner(symResults,ok,syms.length);
+  }
+}
+
+function setStatus(s,ok,tot){
+  const p=document.getElementById('pulseIndicator'),t=document.getElementById('statusText');
+  if(s==='loading'){p.className='pulse loading';t.textContent='更新中...';}
+  else if(s==='ok'){p.className='pulse';t.textContent='即時報價';}
+  else if(s==='partial'){p.className='pulse';t.textContent=ok+'/'+tot+' 已更新';}
+  else{p.className='pulse error';t.textContent='報價異常';}
+}
+
+function showErrorBanner(symResults,ok,total){
+  const banner=document.getElementById('errorBanner');
+  banner.style.display='block';
+
+  const failed=Object.entries(symResults).filter(([,v])=>!v.ok);
+  const succeeded=Object.entries(symResults).filter(([,v])=>v.ok);
+  const reasons=failed.map(([,v])=>v.reason);
+
+  // 判斷主要原因
+  const allTimeout  = reasons.every(r=>r.includes('逾時')||r.includes('均逾時'));
+  const allNetwork  = reasons.every(r=>r.includes('網路連線'));
+  const hasSymErr   = reasons.some(r=>r.includes('找不到代號'));
+  const allProxyFail= reasons.every(r=>r.includes('三個代理均失敗'));
+
+  let commonCause='';
+  if(allTimeout||allProxyFail) commonCause='🔗 代理服務全數逾時';
+  else if(allNetwork)           commonCause='📡 網路連線失敗';
+  else if(hasSymErr)            commonCause='🔍 代號格式錯誤';
+  else if(ok===0)               commonCause='❌ 全部無法取得';
+  else                          commonCause='⚠️ 部分失敗';
+
+  document.getElementById('errorBannerTitle').textContent=
+    ok===0?'所有報價均無法取得':'部分報價無法取得（'+failed.length+'/'+total+' 個代號失敗）';
+  document.getElementById('errorBannerSub').textContent=
+    '✓ 成功 '+ok+'　✗ 失敗 '+failed.length+'　· 嘗試時間：'+new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('errorCauseBadge').textContent=commonCause;
+
+  // ── 代理狀態摘要 ──
+  const proxyStatus = {};
+  failed.forEach(([,v])=>{
+    if(v.attempts) v.attempts.forEach(a=>{
+      if(!proxyStatus[a.proxy]) proxyStatus[a.proxy]={fails:0,reasons:new Set()};
+      proxyStatus[a.proxy].fails++;
+      proxyStatus[a.proxy].reasons.add(a.result);
+    });
+  });
+
+  let proxyHtml='';
+  if(Object.keys(proxyStatus).length>0){
+    proxyHtml=`<div style="margin-bottom:10px;padding:10px 14px;background:rgba(255,69,96,0.06);border:1px solid rgba(255,69,96,0.15);border-radius:8px;">
+      <div style="font-size:11px;font-weight:600;color:var(--red);margin-bottom:8px;letter-spacing:0.3px;">🔌 代理伺服器診斷</div>
+      ${PROXIES.map(p=>{
+        const s=proxyStatus[p.name];
+        const isBad=s&&s.fails>0;
+        const rsns=s?[...s.reasons].join('、'):'—';
+        return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+          <div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;background:${isBad?'var(--red)':'var(--accent2)'}"></div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;min-width:180px;color:${isBad?'var(--red)':'var(--text2)'};">${p.name}</span>
+          <span style="font-size:11px;color:var(--text2);">${isBad?rsns:'✓ 可用'}</span>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:8px;font-size:10px;color:var(--text2);line-height:1.6;">
+        本儀表板透過第三方 CORS 代理伺服器向 Yahoo Finance 請求資料。<br>
+        若三個代理均逾時，通常是代理服務暫時過載或被當前網路環境封鎖。
+      </div>
+    </div>`;
+  }
+
+  // ── 每個代號狀態 ──
+  let gridHtml='';
+  failed.forEach(([sym,v])=>{
+    gridHtml+=`<div class="error-sym-row fail">
+      <div class="edot fail"></div>
+      <span class="esym">${sym}</span>
+      <span class="estatus fail">${v.reason.length>45?v.reason.slice(0,45)+'…':v.reason}</span>
+    </div>`;
+  });
+  succeeded.forEach(([sym,v])=>{
+    const via=v.proxyName?` via ${v.proxyName}`:'';
+    gridHtml+=`<div class="error-sym-row ok">
+      <div class="edot ok"></div>
+      <span class="esym">${sym}</span>
+      <span class="estatus ok">✓ 成功${via}</span>
+    </div>`;
+  });
+  document.getElementById('errorDetailGrid').innerHTML=proxyHtml+gridHtml;
+
+  // ── 解決建議 ──
+  let tips=[];
+  if(allTimeout||allProxyFail){
+    tips.push('三個 CORS 代理（corsproxy.io、allorigins.win、cors-anywhere）均無回應，這是最常見的原因');
+    tips.push('解決方式①：等待 2–5 分鐘後點「手動更新」，代理服務通常會自動恢復');
+    tips.push('解決方式②：若在公司/學校網路，防火牆可能封鎖外部代理，請改用手機熱點嘗試');
+    tips.push('解決方式③：開啟 VPN 後再試，可繞過網路封鎖');
+  }
+  if(allNetwork){
+    tips.push('請確認裝置已連上網路，嘗試開啟其他網頁確認連線狀態');
+    tips.push('重新整理頁面（Ctrl+R / Cmd+R）後再試');
+  }
+  if(hasSymErr){
+    tips.push('部分代號無法在 Yahoo Finance 找到，請點擊 ✎ 修改按鈕確認格式');
+    tips.push('台股格式範例：00878.TW、2881.TW　　美股格式：VTI、VOO（無需加副檔名）');
+  }
+  if(tips.length===0) tips.push('點擊「手動更新」重試，若問題持續請確認網路環境');
+  tips.push('注意：非台股交易時段（平日 09:00–13:30）Yahoo Finance 會回傳前一交易日收盤價，屬正常現象');
+
+  document.getElementById('errorTips').innerHTML=`
+    <div class="error-tips-title">💡 原因分析與解決方式</div>
+    ${tips.map(t=>`<div class="error-tip-item">${t}</div>`).join('')}`;
+}
+
+let errorDetailOpen=false;
+function toggleErrorDetail(){
+  errorDetailOpen=!errorDetailOpen;
+  document.getElementById('errorDetail').style.display=errorDetailOpen?'block':'none';
+  document.getElementById('errorToggle').textContent=errorDetailOpen?'▲ 收起':'▼ 查看詳情';
+}
+
+const gp=sym=>sym&&PC[sym]?PC[sym].price:null;
+const gv=sym=>sym&&PC[sym]?PC[sym].prev:null;
+const gd=sym=>sym&&DC[sym]!=null?DC[sym]:null; // 即時股利，null=尚未取得
+
+// ═══════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════
+function fmt(n,d=0){
+  if(n==null||isNaN(n))return'<span class="skeleton"></span>';
+  return n.toLocaleString('zh-TW',{minimumFractionDigits:d,maximumFractionDigits:d});
+}
+function pct(n,d=2){
+  if(n==null||isNaN(n))return'—';
+  const c=n>0?'pos':n<0?'neg':'neu';
+  return`<span class="${c}">${(n*100).toFixed(d)}%</span>`;
+}
+function dif(p,v){
+  if(!p||!v)return'—';
+  const d=p-v,c=d>0?'pos':d<0?'neg':'neu',s=d>0?'+':'';
+  return`<span class="${c}">${s}${d.toFixed(2)}</span>`;
+}
+// 台股專用：紅漲綠跌
+function pctTW(n,d=2){
+  if(n==null||isNaN(n))return'—';
+  const c=n>0?'neg':n<0?'pos':'neu';
+  return`<span class="${c}">${(n*100).toFixed(d)}%</span>`;
+}
+function difTW(p,v){
+  if(!p||!v)return'—';
+  const d=p-v,c=d>0?'neg':d<0?'pos':'neu',s=d>0?'+':'';
+  return`<span class="${c}">${s}${d.toFixed(2)}</span>`;
+}
+// 台股持倉顏色：高於成本=紅(neg class用紅)，低於成本=綠(pos class用綠)
+function pcColorTW(p,cpu){
+  if(!p)return'';
+  return p>cpu?'neg':p<cpu?'pos':'';
+}
+function mDiv(a){
+  if(a.isCash)return a.dividend/12;
+  const div = gd(a.symbol)??a.dividend; // 優先用即時股利，fallback 到儲存值
+  return div*({月:12,季:4,半年:2,年:1}[a.freq]||4)*a.shares/12;
+}
+function moFrom(dt){
+  const d=new Date(dt),n=new Date();
+  return(n.getFullYear()-d.getFullYear())*12+(n.getMonth()-d.getMonth());
+}
+function val(id){return(document.getElementById(id)||{}).value?.trim()||'';}
+function fv(id){return parseFloat(val(id))||0;}
+
+// ═══════════════════════════════════
+//  RENDER INCOME
+// ═══════════════════════════════════
+function renderIncome(){
+  const tb=document.getElementById('incomeBody');tb.innerHTML='';
+  ST.income.forEach((a,i)=>{
+    const p=a.isCash?null:gp(a.symbol),pv=gv(a.symbol);
+    const livDiv=a.isCash?null:gd(a.symbol);
+    const dispDiv=a.isCash?null:(livDiv!=null?livDiv:a.dividend); // 顯示用股利
+    const cpu=a.cost/a.shares,fn={月:12,季:4,半年:2,年:1}[a.freq]||4;
+    const y=a.isCash?(a.dividend/a.cost):(dispDiv*fn/cpu);
+    const md=mDiv(a);
+    const pd=a.isCash?'定存':(p?fmt(p,2):'<span class="skeleton"></span>');
+    const dd=a.isCash?'—':difTW(p,pv);
+    const pc=a.isCash?'':pcColorTW(p,cpu);
+    // 每股股利欄：有即時值→顯示（標註即時）；尚未取得→skeleton；定存→—
+    let divCell;
+    if(a.isCash) divCell='—';
+    else if(livDiv!=null) divCell=`<span class="mono" title="即時資料">${livDiv}</span>`;
+    else divCell='<span class="skeleton"></span>';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><div class="name-cell"><span>${a.name}</span></div></td>
+      <td><span class="tag tag-${a.isCash?'div':'etf'} mono">${a.symbol||'定存'}</span></td>
+      <td><span class="tag tag-div">${a.freq}配</span></td>
+      <td class="mono">${divCell}</td>
+      <td class="mono">${(y*100).toFixed(2)}%</td>
+      <td class="mono">${fmt(a.shares)}</td>
+      <td class="mono">${fmt(cpu,2)}</td>
+      <td class="mono ${pc}">${pd}</td>
+      <td class="mono">${dd}</td>
+      <td class="mono pos">${fmt(md,0)}</td>
+      <td class="mono">${fmt(a.cost)}</td>
+      <td class="act-col"><div class="act-btns">
+        <button class="btn btn-warn btn-sm" onclick="openModal('income',${i})">✎</button>
+        <button class="btn btn-red btn-sm" onclick="confirmDel('income',${i},'${a.name.replace(/'/g,"\\'")}')">✕</button>
+      </div></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════
+//  RENDER GROWTH
+// ═══════════════════════════════════
+function renderGrowth(){
+  const tb=document.getElementById('growthBody');tb.innerHTML='';
+  ST.growth.forEach((a,i)=>{
+    const p=gp(a.symbol),pv=gv(a.symbol),cpu=a.cost/a.shares;
+    const mv=p?p*a.shares:null,pnl=mv!=null?mv-a.cost:null,roi=pnl!=null?pnl/a.cost:null;
+    const chg=(p&&pv)?(p-pv)/pv:null,pc=pcColorTW(p,cpu);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><div class="name-cell">${a.name}</div></td>
+      <td><span class="tag tag-etf mono">${a.symbol}</span></td>
+      <td class="mono">${fmt(a.shares)}</td>
+      <td class="mono">${fmt(cpu,2)}</td>
+      <td class="mono ${pc}">${p?fmt(p,2):'<span class="skeleton"></span>'}</td>
+      <td class="mono">${difTW(p,pv)}</td>
+      <td>${pctTW(chg)}</td>
+      <td class="mono">${mv?fmt(mv,0):'<span class="skeleton"></span>'}</td>
+      <td class="mono ${pnl>0?'neg':pnl<0?'pos':''}">${pnl!=null?(pnl>0?'+':'')+fmt(pnl,0):'<span class="skeleton"></span>'}</td>
+      <td>${pctTW(roi)}</td>
+      <td class="mono">${fmt(a.cost)}</td>
+      <td class="act-col"><div class="act-btns">
+        <button class="btn btn-warn btn-sm" onclick="openModal('growth',${i})">✎</button>
+        <button class="btn btn-red btn-sm" onclick="confirmDel('growth',${i},'${a.name.replace(/'/g,"\\'")}')">✕</button>
+      </div></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════
+//  RENDER US
+// ═══════════════════════════════════
+function renderUS(){
+  const tb=document.getElementById('usBody');tb.innerHTML='';
+  ST.us.forEach((a,i)=>{
+    const p=gp(a.symbol),pv=gv(a.symbol);
+    const pusd=p?(p-a.costUSD)*a.shares:null,roi=pusd!=null?pusd/(a.costUSD*a.shares):null;
+    const mt=p?p*a.shares*FX:null,pt=pusd!=null?pusd*FX:null,chg=(p&&pv)?(p-pv)/pv:null;
+    const pc=p?(p>a.costUSD?'pos':p<a.costUSD?'neg':''):'';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><div class="name-cell"><span>${a.name}</span></div></td>
+      <td><span class="tag tag-us mono">${a.symbol}</span></td>
+      <td class="mono">${a.shares}</td>
+      <td class="mono">$${a.costUSD.toFixed(2)}</td>
+      <td class="mono ${pc}">${p?'$'+fmt(p,2):'<span class="skeleton"></span>'}</td>
+      <td class="mono">${dif(p,pv)}</td>
+      <td>${pct(chg)}</td>
+      <td class="mono">${mt?fmt(mt,0):'<span class="skeleton"></span>'}</td>
+      <td class="mono ${pt>0?'pos':pt<0?'neg':''}">${pt!=null?(pt>0?'+':'')+fmt(pt,0):'<span class="skeleton"></span>'}</td>
+      <td>${pct(roi)}</td>
+      <td class="act-col"><div class="act-btns">
+        <button class="btn btn-warn btn-sm" onclick="openModal('us',${i})">✎</button>
+        <button class="btn btn-red btn-sm" onclick="confirmDel('us',${i},'${a.name}')">✕</button>
+      </div></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════
+//  RENDER PERSONS
+// ═══════════════════════════════════
+function renderPersons(){
+  const grid=document.getElementById('personGrid');grid.innerHTML='';
+  ST.persons.forEach((acc,pi)=>{
+    let ta=0,tc=0,tp=0,rows='';
+    acc.holdings.forEach((h,hi)=>{
+      const p=gp(h.symbol),cpu=h.cost/h.shares,mo=moFrom(h.investDate);
+      const fn={月:12,季:4,半年:2,年:1}[h.freq]||4;
+      const livDiv=gd(h.symbol);
+      const useDiv=livDiv!=null?livDiv:h.dividend; // 優先即時股利
+      const ac=Math.round(useDiv*fn*h.shares/12)*mo;
+      const pnl=p?(p-cpu)*h.shares:null;
+      ta+=ac;tc+=h.cost;if(pnl!=null)tp+=pnl;
+      const pc=pcColorTW(p,cpu);
+      rows+=`<tr>
+        <td><div class="name-cell">${h.name}<span class="sym">${h.symbol||''}</span></div></td>
+        <td class="mono">${h.shares}</td>
+        <td class="mono">${fmt(cpu,2)}</td>
+        <td class="mono ${pc}">${p?fmt(p,2):'<span class="skeleton" style="width:38px"></span>'}</td>
+        <td class="mono ${pnl>0?'neg':pnl<0?'pos':''}">${pnl!=null?(pnl>0?'+':'')+fmt(pnl,0):'—'}</td>
+        <td class="mono warn-c">${fmt(ac,0)}</td>
+        <td class="act-col"><div class="act-btns">
+          <button class="btn btn-warn btn-sm" onclick="openHoldingModal(${pi},${hi})">✎</button>
+          <button class="btn btn-red btn-sm" onclick="confirmDelHolding(${pi},${hi},'${h.name.replace(/'/g,"\\'")}')">✕</button>
+        </div></td>
+      </tr>`;
+    });
+    const rem=ta-acc.collected,roi=tc>0?tp/tc:0;
+    const card=document.createElement('div');
+    card.className='person-card fade-in';
+    card.innerHTML=`
+      <div class="person-card-header">
+        <h3>👤 ${acc.name}</h3>
+        <div class="phdr-right">
+          <span class="pkpi">投入 ${fmt(tc)} | <span class="${tp>0?'neg':'pos'}">${(roi*100).toFixed(1)}%</span></span>
+          <button class="btn btn-green btn-sm" onclick="openHoldingModal(${pi})">＋</button>
+          <button class="btn btn-warn btn-sm" onclick="openEditPersonModal(${pi})">✎</button>
+          <button class="btn btn-red btn-sm" onclick="confirmDelPerson(${pi},'${acc.name.replace(/'/g,"\\'")}')">✕</button>
+        </div>
+      </div>
+      <div class="person-table">
+        <table>
+          <thead><tr><th>名稱</th><th>股數</th><th>成本價</th><th>市價</th><th>損益</th><th>累積利息</th><th class="act-col">操作</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="interest-box">
+        <div class="interest-item">累積利息<strong class="warn-c">${fmt(ta)}</strong></div>
+        <div class="interest-item">已領取
+          <span class="collected-wrap" id="collected-wrap-${pi}">
+            <span class="collected-val" onclick="startEditCollected(${pi})" title="點擊修改">${fmt(acc.collected)}</span>
+            <span class="collected-edit-icon" onclick="startEditCollected(${pi})">✎</span>
+          </span>
+        </div>
+        <div class="interest-item">剩餘<strong class="${rem>0?'pos':'neu'}">${fmt(rem)}</strong></div>
+        <div class="interest-item">總損益<strong class="${tp>0?'neg':'pos'}">${tp>0?'+':''}${fmt(tp,0)}</strong></div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════
+//  RENDER SUMMARY
+// ═══════════════════════════════════
+function renderSummary(){
+  // 收益型
+  let mo=0;ST.income.forEach(a=>{mo+=mDiv(a);});
+  document.getElementById('s-monthly').textContent='$ '+fmt(mo,0);
+  const tc=ST.income.reduce((s,a)=>s+a.cost,0);
+  document.getElementById('s-cost').textContent='$ '+fmt(tc,0);
+  document.getElementById('s-yield').textContent=(mo*12/tc*100).toFixed(2)+'%';
+
+  // 台股成長型
+  let mvTW=0, costTW=0;
+  ST.growth.forEach(a=>{
+    const p=gp(a.symbol);
+    mvTW+=p?p*a.shares:a.cost;
+    costTW+=a.cost;
+  });
+  const roiTW=costTW>0?(mvTW-costTW)/costTW:0;
+  document.getElementById('s-mktval-tw').textContent='$ '+fmt(mvTW,0);
+  const roiTWel=document.getElementById('s-roi-tw');
+  roiTWel.textContent=(roiTW*100).toFixed(2)+'%';
+  roiTWel.style.color=roiTW>0?'var(--red)':roiTW<0?'var(--accent2)':'var(--text2)';
+
+  // 美股成長型
+  let mvUS=0, costUS=0;
+  ST.us.forEach(a=>{
+    const p=gp(a.symbol);
+    mvUS+=p?p*a.shares*FX:a.costUSD*a.shares*FX;
+    costUS+=a.costUSD*a.shares*FX;
+  });
+  const roiUS=costUS>0?(mvUS-costUS)/costUS:0;
+  document.getElementById('s-mktval-us').textContent='$ '+fmt(mvUS,0);
+  const roiUSel=document.getElementById('s-roi-us');
+  roiUSel.textContent=(roiUS*100).toFixed(2)+'%';
+  roiUSel.style.color=roiUS>0?'var(--accent2)':roiUS<0?'var(--red)':'var(--text2)';
+}
+
+function confirmResetData(){
+  document.getElementById('modalTitle').textContent='更新代號與每股股利';
+  document.getElementById('modalBody').innerHTML=`<p class="confirm-msg">
+    此操作將同步以下三項：<br><br>
+    ✦ <strong style="color:var(--accent)">Yahoo 代號</strong> — 更新為最新代號格式<br>
+    ✦ <strong style="color:var(--accent)">每股股利</strong> — 重新向 Yahoo Finance 抓取最近一期配息金額（即時）<br>
+    ✦ <strong style="color:var(--accent)">即時市價</strong> — 重新向 Yahoo Finance 抓取<br><br>
+    以下資料<strong>不會被更動</strong>：股數、投入成本、新增的股票、個人帳戶所有資料。
+  </p>`;
+  document.getElementById('modalFooter').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn btn-accent" onclick="applyDefaultUpdates()">確認更新</button>`;
+  showModal();
+}
+
+function applyDefaultUpdates(){
+  // 建立預設查詢表：以 name 為 key
+  const defMap = {};
+  [...DEF.income, ...DEF.growth, ...DEF.us].forEach(a=>{
+    defMap[a.name] = {symbol: a.symbol, dividend: a.dividend};
+  });
+
+  let updated = 0;
+
+  // 更新 income
+  ST.income.forEach(a=>{
+    const d = defMap[a.name];
+    if(d){
+      if(d.symbol !== undefined) a.symbol = d.symbol;
+      if(d.dividend !== undefined) a.dividend = d.dividend;
+      updated++;
+    }
+  });
+
+  // 更新 growth
+  ST.growth.forEach(a=>{
+    const d = defMap[a.name];
+    if(d){
+      if(d.symbol !== undefined) a.symbol = d.symbol;
+      updated++;
+    }
+  });
+
+  // 更新 us
+  ST.us.forEach(a=>{
+    const d = defMap[a.name];
+    if(d){
+      if(d.symbol !== undefined) a.symbol = d.symbol;
+      updated++;
+    }
+  });
+
+  // 更新個人帳戶持股的 dividend（依 symbol 配對）
+  const divBySymbol = {};
+  DEF.income.forEach(a=>{ if(a.symbol) divBySymbol[a.symbol] = a.dividend; });
+  ST.persons.forEach(acc=>{
+    acc.holdings.forEach(h=>{
+      if(h.symbol && divBySymbol[h.symbol] !== undefined){
+        h.dividend = divBySymbol[h.symbol];
+      }
+    });
+  });
+
+  save();
+  closeModal();
+  renderAll();
+  fetchAll();
+}
+
+// ═══════════════════════════════════
+//  INLINE EDIT 已領取
+// ═══════════════════════════════════
+function startEditCollected(pi){
+  const wrap = document.getElementById('collected-wrap-'+pi);
+  if(!wrap) return;
+  const cur = ST.persons[pi].collected;
+  wrap.innerHTML = `<input class="collected-input" id="collected-input-${pi}"
+    type="number" value="${cur}" min="0"
+    onkeydown="handleCollectedKey(event,${pi})"
+    onblur="saveCollected(${pi})"
+  >`;
+  const inp = document.getElementById('collected-input-'+pi);
+  inp.focus();
+  inp.select();
+}
+
+function handleCollectedKey(e, pi){
+  if(e.key === 'Enter') { e.preventDefault(); saveCollected(pi); }
+  if(e.key === 'Escape'){ e.preventDefault(); renderPersons(); renderSummary(); }
+}
+
+function saveCollected(pi){
+  const inp = document.getElementById('collected-input-'+pi);
+  if(!inp) return; // already saved
+  const val = parseFloat(inp.value);
+  if(!isNaN(val) && val >= 0) ST.persons[pi].collected = val;
+  save();
+  renderPersons();
+  renderSummary();
+}
+
+function renderAll(){renderIncome();renderGrowth();renderUS();renderPersons();renderSummary();}
+
+// ═══════════════════════════════════
+//  TAB
+// ═══════════════════════════════════
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');
+}
+
+// ═══════════════════════════════════
+//  MODAL OPEN
+// ═══════════════════════════════════
+function openModal(type,idx=null){
+  const isEdit=idx!==null;
+  const titles={income:'收益型 ETF',growth:'成長型 ETF',us:'美股 ETF'};
+  document.getElementById('modalTitle').textContent=(isEdit?'修改 ':'新增 ')+titles[type];
+  const ex=isEdit?ST[type][idx]:null;
+  let html='';
+
+  if(type==='income'){
+    const d=ex||{name:'',symbol:'',freq:'季',dividend:0,shares:0,cost:0,isCash:false};
+    html=`<div class="form-grid">
+      <div class="fg"><label>名稱</label><input id="fn" value="${d.name}" placeholder="群益919"></div>
+      <div class="fg"><label>Yahoo 代號</label><input id="fs" value="${d.symbol||''}" placeholder="00919.TW"></div>
+      <div class="fg"><label>配息頻率</label><select id="ff">${['月','季','半年','年'].map(v=>`<option${d.freq===v?' selected':''}>${v}</option>`).join('')}</select></div>
+      <div class="fg"><label>每股股利</label><input id="fd" type="number" step="0.001" value="${d.dividend}" placeholder="0.72"></div>
+      <div class="fg"><label>持股數</label><input id="fsh" type="number" value="${d.shares}"></div>
+      <div class="fg"><label>總投入成本 TWD</label><input id="fc" type="number" value="${d.cost}"></div>
+      <div class="fg full"><label class="checkbox-row"><input type="checkbox" id="fca" ${d.isCash?'checked':''}>&nbsp; 定存 / 固定收益（股利填年利息總額）</label></div>
+    </div>`;
+  } else if(type==='growth'){
+    const d=ex||{name:'',symbol:'',shares:0,cost:0};
+    html=`<div class="form-grid">
+      <div class="fg"><label>名稱</label><input id="fn" value="${d.name}" placeholder="富邦金"></div>
+      <div class="fg"><label>Yahoo 代號</label><input id="fs" value="${d.symbol||''}" placeholder="2881.TW"></div>
+      <div class="fg"><label>持股數</label><input id="fsh" type="number" value="${d.shares}"></div>
+      <div class="fg"><label>總投入成本 TWD</label><input id="fc" type="number" value="${d.cost}"></div>
+    </div>`;
+  } else {
+    const d=ex||{name:'',symbol:'',shares:0,costUSD:0};
+    html=`<div class="form-grid">
+      <div class="fg"><label>名稱</label><input id="fn" value="${d.name}" placeholder="VTI"></div>
+      <div class="fg"><label>Yahoo 代號</label><input id="fs" value="${d.symbol||''}" placeholder="VTI"></div>
+      <div class="fg"><label>持股數</label><input id="fsh" type="number" step="0.00001" value="${d.shares}"></div>
+      <div class="fg"><label>成本價 USD</label><input id="fcu" type="number" step="0.01" value="${d.costUSD||0}"></div>
+    </div>`;
+  }
+
+  document.getElementById('modalBody').innerHTML=html;
+  document.getElementById('modalFooter').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn btn-accent" onclick="saveItem('${type}',${isEdit?idx:'null'})">${isEdit?'儲存':'新增'}</button>`;
+  showModal();
+}
+
+function saveItem(type,idx){
+  const isEdit=idx!=='null'&&idx!==null;
+  const name=val('fn');if(!name){alert('名稱不能為空');return;}
+  let item;
+  if(type==='income'){
+    item={id:isEdit?ST.income[idx].id:uid(),name,symbol:val('fs')||null,freq:document.getElementById('ff').value,
+      dividend:fv('fd'),shares:fv('fsh'),cost:fv('fc'),isCash:document.getElementById('fca').checked};
+  } else if(type==='growth'){
+    item={id:isEdit?ST.growth[idx].id:uid(),name,symbol:val('fs'),shares:fv('fsh'),cost:fv('fc')};
+  } else {
+    item={id:isEdit?ST.us[idx].id:uid(),name,symbol:val('fs'),shares:fv('fsh'),costUSD:fv('fcu')};
+  }
+  if(isEdit)ST[type][idx]=item;else ST[type].push(item);
+  save();closeModal();renderAll();fetchAll();
+}
+
+// ═══════════════════════════════════
+//  PERSON MODALS
+// ═══════════════════════════════════
+function openAddPersonModal(){
+  document.getElementById('modalTitle').textContent='新增個人帳戶';
+  document.getElementById('modalBody').innerHTML=`<div class="form-grid form-single">
+    <div class="fg"><label>姓名</label><input id="fpn" placeholder="王小明"></div>
+    <div class="fg"><label>已領取利息 TWD</label><input id="fpc" type="number" value="0"></div>
+  </div>`;
+  document.getElementById('modalFooter').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn btn-accent" onclick="addPerson()">新增</button>`;
+  showModal();
+}
+function addPerson(){
+  const name=val('fpn');if(!name){alert('姓名不能為空');return;}
+  ST.persons.push({id:uid(),name,collected:fv('fpc'),holdings:[]});
+  save();closeModal();renderAll();
+}
+
+function openEditPersonModal(pi){
+  const a=ST.persons[pi];
+  document.getElementById('modalTitle').textContent='修改帳戶 — '+a.name;
+  document.getElementById('modalBody').innerHTML=`<div class="form-grid form-single">
+    <div class="fg"><label>姓名</label><input id="fpn" value="${a.name}"></div>
+    <div class="fg"><label>已領取利息 TWD</label><input id="fpc" type="number" value="${a.collected}"></div>
+  </div>`;
+  document.getElementById('modalFooter').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn btn-accent" onclick="savePerson(${pi})">儲存</button>`;
+  showModal();
+}
+function savePerson(pi){
+  const name=val('fpn');if(!name){alert('姓名不能為空');return;}
+  ST.persons[pi].name=name;ST.persons[pi].collected=fv('fpc');
+  save();closeModal();renderAll();
+}
+
+function openHoldingModal(pi,hi=null){
+  const isEdit=hi!==null;
+  const acc=ST.persons[pi];
+  const d=isEdit?acc.holdings[hi]:{name:'',symbol:'',freq:'季',dividend:0,shares:0,cost:0,investDate:new Date().toISOString().slice(0,10)};
+  document.getElementById('modalTitle').textContent=`${isEdit?'修改':'新增'}持股 — ${acc.name}`;
+  document.getElementById('modalBody').innerHTML=`<div class="form-grid">
+    <div class="fg"><label>名稱</label><input id="fn" value="${d.name}" placeholder="國泰878"></div>
+    <div class="fg"><label>Yahoo 代號</label><input id="fs" value="${d.symbol||''}" placeholder="00878.TW"></div>
+    <div class="fg"><label>配息頻率</label><select id="ff">${['月','季','半年','年'].map(v=>`<option${d.freq===v?' selected':''}>${v}</option>`).join('')}</select></div>
+    <div class="fg"><label>每股股利</label><input id="fd" type="number" step="0.001" value="${d.dividend}"></div>
+    <div class="fg"><label>持股數</label><input id="fsh" type="number" value="${d.shares}"></div>
+    <div class="fg"><label>總投入成本 TWD</label><input id="fc" type="number" value="${d.cost}"></div>
+    <div class="fg full"><label>投入日期</label><input id="fdt" type="date" value="${d.investDate}"></div>
+  </div>`;
+  document.getElementById('modalFooter').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn btn-accent" onclick="saveHolding(${pi},${isEdit?hi:'null'})">${isEdit?'儲存':'新增'}</button>`;
+  showModal();
+}
+function saveHolding(pi,hi){
+  const isEdit=hi!=='null'&&hi!==null;
+  const name=val('fn');if(!name){alert('名稱不能為空');return;}
+  const h={id:isEdit?ST.persons[pi].holdings[hi].id:uid(),name,symbol:val('fs')||null,
+    freq:document.getElementById('ff').value,dividend:fv('fd'),shares:fv('fsh'),cost:fv('fc'),
+    investDate:val('fdt')||new Date().toISOString().slice(0,10)};
+  if(isEdit)ST.persons[pi].holdings[hi]=h;else ST.persons[pi].holdings.push(h);
+  save();closeModal();renderAll();fetchAll();
+}
+
+// ═══════════════════════════════════
+//  DELETE CONFIRMS
+// ═══════════════════════════════════
+function confirmDel(type,idx,name){
+  document.getElementById('modalTitle').textContent='確認刪除';
+  document.getElementById('modalBody').innerHTML=`<p class="confirm-msg">確定要刪除 <strong>「${name}」</strong>？<br>此操作無法復原。</p>`;
+  document.getElementById('modalFooter').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn btn-red" onclick="delItem('${type}',${idx})">確認刪除</button>`;
+  showModal();
+}
+function delItem(type,idx){ST[type].splice(idx,1);save();closeModal();renderAll();}
+
+function confirmDelHolding(pi,hi,name){
+  document.getElementById('modalTitle').textContent='確認刪除持股';
+  document.getElementById('modalBody').innerHTML=`<p class="confirm-msg">確定要刪除 <strong>「${name}」</strong> 這筆持股？</p>`;
+  document.getElementById('modalFooter').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn btn-red" onclick="delHolding(${pi},${hi})">確認刪除</button>`;
+  showModal();
+}
+function delHolding(pi,hi){ST.persons[pi].holdings.splice(hi,1);save();closeModal();renderAll();}
+
+function confirmDelPerson(pi,name){
+  document.getElementById('modalTitle').textContent='確認刪除帳戶';
+  document.getElementById('modalBody').innerHTML=`<p class="confirm-msg">確定要刪除帳戶 <strong>「${name}」</strong> 及所有持股？</p>`;
+  document.getElementById('modalFooter').innerHTML=`
+    <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+    <button class="btn btn-red" onclick="delPerson(${pi})">確認刪除</button>`;
+  showModal();
+}
+function delPerson(pi){ST.persons.splice(pi,1);save();closeModal();renderAll();}
+
+// ═══════════════════════════════════
+//  MODAL HELPERS
+// ═══════════════════════════════════
+function showModal(){document.getElementById('modalOverlay').classList.add('open');}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+// 只有當 mousedown 和 mouseup 都在 overlay 背景上才關閉，防止拖曳選字誤觸
+let _mouseDownOnOverlay = false;
+document.getElementById('modalOverlay').addEventListener('mousedown', e => {
+  _mouseDownOnOverlay = e.target === document.getElementById('modalOverlay');
+});
+document.getElementById('modalOverlay').addEventListener('mouseup', e => {
+  if(_mouseDownOnOverlay && e.target === document.getElementById('modalOverlay')) closeModal();
+  _mouseDownOnOverlay = false;
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// ═══════════════════════════════════
+//  INIT
+// ═══════════════════════════════════
+(async()=>{
+  await load();   // 先從 Google Sheets 載入資料
+  renderAll();    // 再渲染畫面
+  fetchAll();     // 再抓股價
+  setInterval(fetchAll,5*60*1000);
+})();
+</script>
+</body>
+</html>
